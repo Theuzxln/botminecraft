@@ -1,88 +1,95 @@
 const mineflayer = require('mineflayer');
 const http = require('http');
 
-// Servidor HTTP para o Render
 const WEB_PORT = process.env.PORT || 10000;
 
 http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Bot Minecraft Online!');
+  res.end('Bot Online');
 }).listen(WEB_PORT, () => {
-  console.log(`🌐 Servidor HTTP rodando na porta ${WEB_PORT}`);
+  console.log(`🌐 HTTP online na porta ${WEB_PORT}`);
 });
 
-function criarBot() {
-  console.log('=================================');
-  console.log('🚀 Iniciando bot...');
-  console.log('HOST:', process.env.HOST);
-  console.log('PORT_MC:', process.env.PORT_MC);
-  console.log('BOT_NAME:', process.env.BOT_NAME);
-  console.log('=================================');
+let bot;
+let reconnecting = false;
 
-  const bot = mineflayer.createBot({
+function conectar() {
+  console.log('================================');
+  console.log('🚀 Iniciando conexão...');
+  console.log(`Host: ${process.env.HOST}`);
+  console.log(`Porta: ${process.env.PORT_MC}`);
+  console.log(`Nick: ${process.env.BOT_NAME}`);
+  console.log('================================');
+
+  bot = mineflayer.createBot({
     host: process.env.HOST,
-    port: parseInt(process.env.PORT_MC),
-    username: process.env.BOT_NAME
+    port: Number(process.env.PORT_MC),
+    username: process.env.BOT_NAME,
+    version: false
   });
 
-  bot.on('login', () => {
-    console.log('🔑 Login realizado!');
+  bot.once('login', () => {
+    console.log('🔑 Login realizado');
   });
 
-  bot.on('spawn', () => {
-    console.log('✅ Bot conectado ao servidor!');
+  bot.once('spawn', () => {
+    console.log('✅ Bot conectado');
 
-    // Pulo AFK
-    setInterval(() => {
-      try {
-        bot.setControlState('jump', true);
+    iniciarAFK();
+  });
 
-        setTimeout(() => {
-          bot.setControlState('jump', false);
-        }, 500);
-      } catch (e) {
-        console.log('Erro ao pular:', e.message);
-      }
-    }, 6000);
+  bot.on('chat', (username, message) => {
+    if (username === bot.username) return;
 
-    // Mensagens no chat
-    const mensagens = [
-      'Oi!',
-      'Estou online 😎',
-      'AFK',
-      'Bot presente'
-    ];
-
-    setInterval(() => {
-      try {
-        const msg = mensagens[Math.floor(Math.random() * mensagens.length)];
-        bot.chat(msg);
-        console.log('💬 Mensagem enviada:', msg);
-      } catch (e) {
-        console.log('Erro ao enviar mensagem:', e.message);
-      }
-    }, 30000);
+    console.log(`[CHAT] ${username}: ${message}`);
   });
 
   bot.on('kicked', (reason) => {
-    console.log('🚫 Expulso do servidor:', reason);
-  });
-
-  bot.on('end', (reason) => {
-    console.log('⚠️ Bot desconectado.');
-    console.log('Motivo:', reason);
-
-    console.log('🔄 Reconectando em 10 segundos...');
-
-    setTimeout(() => {
-      criarBot();
-    }, 10000);
+    console.log('🚫 Kickado:');
+    console.log(reason);
   });
 
   bot.on('error', (err) => {
-    console.log('❌ Erro do bot:');
-    console.log(err);
+    console.log('❌ Erro:');
+    console.log(err?.message || err);
+  });
+
+  bot.on('end', () => {
+    console.log('⚠️ Conexão encerrada');
+
+    if (!reconnecting) {
+      reconnecting = true;
+
+      setTimeout(() => {
+        reconnecting = false;
+        conectar();
+      }, 15000);
+    }
   });
 }
 
-criarBot();
+function iniciarAFK() {
+  setInterval(() => {
+    if (!bot || !bot.entity) return;
+
+    try {
+      bot.look(
+        Math.random() * Math.PI * 2,
+        (Math.random() - 0.5) * 0.5,
+        true
+      );
+
+      bot.setControlState('jump', true);
+
+      setTimeout(() => {
+        bot.setControlState('jump', false);
+      }, 500);
+
+      console.log('🤖 Movimento AFK executado');
+    } catch (err) {
+      console.log('Erro movimento:', err.message);
+    }
+  }, 15000);
+}
+
+conectar();
