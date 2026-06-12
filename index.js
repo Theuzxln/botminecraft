@@ -5,91 +5,113 @@ const WEB_PORT = process.env.PORT || 10000;
 
 http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Bot Online');
+  res.end('Bot Minecraft Online');
 }).listen(WEB_PORT, () => {
   console.log(`🌐 HTTP online na porta ${WEB_PORT}`);
 });
 
-let bot;
-let reconnecting = false;
+let bot = null;
+let afkInterval = null;
 
-function conectar() {
-  console.log('================================');
-  console.log('🚀 Iniciando conexão...');
-  console.log(`Host: ${process.env.HOST}`);
-  console.log(`Porta: ${process.env.PORT_MC}`);
-  console.log(`Nick: ${process.env.BOT_NAME}`);
-  console.log('================================');
+function iniciarBot() {
+  console.log('\n==============================');
+  console.log('🚀 Iniciando bot...');
+  console.log('HOST:', process.env.HOST);
+  console.log('PORT_MC:', process.env.PORT_MC);
+  console.log('BOT_NAME:', process.env.BOT_NAME);
+  console.log('==============================\n');
 
-  bot = mineflayer.createBot({
-    host: process.env.HOST,
-    port: Number(process.env.PORT_MC),
-    username: process.env.BOT_NAME,
-    version: false
-  });
+  try {
+    bot = mineflayer.createBot({
+      host: process.env.HOST,
+      port: Number(process.env.PORT_MC),
+      username: process.env.BOT_NAME,
+      version: false
+    });
 
-  bot.once('login', () => {
-    console.log('🔑 Login realizado');
-  });
+    bot._client.on('connect', () => {
+      console.log('🟢 Socket conectado');
+    });
 
-  bot.once('spawn', () => {
-    console.log('✅ Bot conectado');
+    bot._client.on('error', (err) => {
+      console.log('❌ Erro de socket:', err.message);
+    });
 
-    iniciarAFK();
-  });
+    bot.on('login', () => {
+      console.log('🔑 Login realizado');
+    });
 
-  bot.on('chat', (username, message) => {
-    if (username === bot.username) return;
+    bot.on('spawn', () => {
+      console.log('✅ Bot entrou no servidor');
 
-    console.log(`[CHAT] ${username}: ${message}`);
-  });
+      if (afkInterval) clearInterval(afkInterval);
 
-  bot.on('kicked', (reason) => {
-    console.log('🚫 Kickado:');
-    console.log(reason);
-  });
+      afkInterval = setInterval(() => {
+        if (!bot || !bot.entity) return;
 
-  bot.on('error', (err) => {
-    console.log('❌ Erro:');
-    console.log(err?.message || err);
-  });
+        try {
+          const yaw = Math.random() * Math.PI * 2;
+          const pitch = (Math.random() - 0.5) * 0.4;
 
-  bot.on('end', () => {
-    console.log('⚠️ Conexão encerrada');
+          bot.look(yaw, pitch, true);
 
-    if (!reconnecting) {
-      reconnecting = true;
+          bot.setControlState('jump', true);
 
-      setTimeout(() => {
-        reconnecting = false;
-        conectar();
+          setTimeout(() => {
+            if (bot) {
+              bot.setControlState('jump', false);
+            }
+          }, 500);
+
+          console.log('🤖 Movimento AFK executado');
+        } catch (err) {
+          console.log('⚠️ Erro no movimento:', err.message);
+        }
       }, 15000);
-    }
-  });
-}
+    });
 
-function iniciarAFK() {
-  setInterval(() => {
-    if (!bot || !bot.entity) return;
+    bot.on('chat', (username, message) => {
+      if (username === bot.username) return;
 
-    try {
-      bot.look(
-        Math.random() * Math.PI * 2,
-        (Math.random() - 0.5) * 0.5,
-        true
-      );
+      console.log(`[CHAT] ${username}: ${message}`);
+    });
 
-      bot.setControlState('jump', true);
+    bot.on('kicked', (reason) => {
+      console.log('🚫 Kickado pelo servidor:');
+      console.log(reason);
+    });
+
+    bot.on('error', (err) => {
+      console.log('❌ Erro Mineflayer:');
+      console.log(err.message || err);
+    });
+
+    bot.on('end', () => {
+      console.log('⚠️ Conexão encerrada');
+
+      if (afkInterval) {
+        clearInterval(afkInterval);
+        afkInterval = null;
+      }
+
+      console.log('🔄 Tentando reconectar em 15 segundos...');
 
       setTimeout(() => {
-        bot.setControlState('jump', false);
-      }, 500);
+        iniciarBot();
+      }, 15000);
+    });
 
-      console.log('🤖 Movimento AFK executado');
-    } catch (err) {
-      console.log('Erro movimento:', err.message);
-    }
-  }, 15000);
+    setTimeout(() => {
+      console.log('⏱️ Verificação: bot iniciado há 30 segundos');
+    }, 30000);
+
+  } catch (err) {
+    console.log('💥 Falha ao criar bot:', err);
+
+    setTimeout(() => {
+      iniciarBot();
+    }, 15000);
+  }
 }
 
-conectar();
+iniciarBot();
