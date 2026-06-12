@@ -1,10 +1,5 @@
-const bot = mineflayer.createBot({
-  host: process.env.HOST,
-  port: Number(process.env.PORT_MC),
-  username: process.env.BOT_NAME,
-  auth: 'offline',
-  version: '1.21.1'
-});
+const mineflayer = require('mineflayer');
+const http = require('http');
 
 console.log('Script iniciado');
 
@@ -17,7 +12,6 @@ http.createServer((req, res) => {
 
 function startBot() {
   console.log('Iniciando bot...');
-
   console.log('HOST =', process.env.HOST);
   console.log('PORT_MC =', process.env.PORT_MC);
   console.log('BOT_NAME =', process.env.BOT_NAME);
@@ -30,10 +24,18 @@ function startBot() {
       port: Number(process.env.PORT_MC),
       username: process.env.BOT_NAME,
       auth: 'offline',
-      version: false
+      version: '1.21.1'
     });
 
     console.log('Depois do createBot');
+
+    bot._client.on('connect', () => {
+      console.log('Socket conectado');
+    });
+
+    bot._client.on('close', () => {
+      console.log('Socket fechado');
+    });
 
     bot.on('login', () => {
       console.log('Login realizado');
