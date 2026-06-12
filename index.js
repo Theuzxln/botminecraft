@@ -2,8 +2,8 @@ const mineflayer = require('mineflayer');
 
 function criarBot() {
   const bot = mineflayer.createBot({
-    host: 'fdsogabriel.aternos.me', // ← substitua aqui
-    port: 48234,
+    host: 'myworldgbgat.aternos.me', // ← substitua aqui
+    port: 62351,
     username: 'BotAFK123' // Nome do bot
   });
 
