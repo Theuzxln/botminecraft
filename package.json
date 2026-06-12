@@ -1,12 +1,12 @@
 {
   "name": "bot-afk-mc",
-  "version": "1.0.0",
-  "description": "Bot AFK para servidor Minecraft Aternos",
+  "version": "2.0.0",
+  "description": "Bot AFK Minecraft para Render",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "mineflayer": "^4.15.0"
+    "mineflayer": "^4.26.0"
   }
 }
