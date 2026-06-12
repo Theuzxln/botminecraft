@@ -1,5 +1,10 @@
-const mineflayer = require('mineflayer');
-const http = require('http');
+const bot = mineflayer.createBot({
+  host: process.env.HOST,
+  port: Number(process.env.PORT_MC),
+  username: process.env.BOT_NAME,
+  auth: 'offline',
+  version: '1.21.1'
+});
 
 console.log('Script iniciado');
 
