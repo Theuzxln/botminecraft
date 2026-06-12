@@ -1,54 +1,60 @@
 const mineflayer = require('mineflayer');
 const http = require('http');
 
+console.log('Script iniciado');
+
 http.createServer((req, res) => {
   res.writeHead(200);
   res.end('OK');
-}).listen(process.env.PORT || 10000);
+}).listen(process.env.PORT || 10000, () => {
+  console.log('HTTP iniciado');
+});
 
 function startBot() {
   console.log('Iniciando bot...');
 
-  const bot = mineflayer.createBot({
-    host: process.env.HOST,
-    port: parseInt(process.env.PORT_MC),
-    username: process.env.BOT_NAME,
-    auth: 'offline'
-  });
+  console.log('HOST =', process.env.HOST);
+  console.log('PORT_MC =', process.env.PORT_MC);
+  console.log('BOT_NAME =', process.env.BOT_NAME);
 
-  bot.on('login', () => {
-    console.log('Login realizado');
-  });
+  try {
+    console.log('Antes do createBot');
 
-  bot.on('spawn', () => {
-    console.log('Bot entrou no servidor');
+    const bot = mineflayer.createBot({
+      host: process.env.HOST,
+      port: Number(process.env.PORT_MC),
+      username: process.env.BOT_NAME,
+      auth: 'offline',
+      version: false
+    });
 
-    setInterval(() => {
-      if (!bot.entity) return;
+    console.log('Depois do createBot');
 
-      bot.setControlState('jump', true);
+    bot.on('login', () => {
+      console.log('Login realizado');
+    });
 
-      setTimeout(() => {
-        bot.setControlState('jump', false);
-      }, 500);
-    }, 10000);
-  });
+    bot.on('spawn', () => {
+      console.log('Bot entrou no servidor');
+    });
 
-  bot.on('kicked', (reason) => {
-    console.log('Kickado:', reason);
-  });
+    bot.on('error', (err) => {
+      console.log('Erro:', err);
+    });
 
-  bot.on('error', (err) => {
-    console.log('Erro:', err);
-  });
+    bot.on('kicked', (reason) => {
+      console.log('Kickado:', reason);
+    });
 
-  bot.on('end', () => {
-    console.log('Desconectado. Reconectando em 15 segundos...');
+    bot.on('end', () => {
+      console.log('Desconectado');
 
-    setTimeout(() => {
-      startBot();
-    }, 15000);
-  });
+      setTimeout(startBot, 15000);
+    });
+
+  } catch (err) {
+    console.log('Erro fatal:', err);
+  }
 }
 
 startBot();
