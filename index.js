@@ -1,11 +1,8 @@
-const mineflayer = require('mineflayer');
-
-function criarBot() {
-  const bot = mineflayer.createBot({
-    host: 'myworldgbgat.aternos.me', // ← substitua aqui
-    port: 62351,
-    username: 'BotAFK123' // Nome do bot
-  });
+const bot = mineflayer.createBot({
+  host: process.env.HOST,
+  port: parseInt(process.env.PORT_MC),
+  username: process.env.BOT_NAME
+});
 
   bot.on('spawn', () => {
     console.log('✅ Bot conectado ao servidor!');
